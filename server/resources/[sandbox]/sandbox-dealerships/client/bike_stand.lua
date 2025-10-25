@@ -100,31 +100,40 @@ function CreateBikeStandBlips()
 	end
 end
 
-AddEventHandler("BikeStands:Client:Open", function(entityData, data)
-	if _justBoughtBike[data.location] then
-		return exports["sandbox-hud"]:Notification("error", "You Just Bought a Bike off Me! Weirdo!")
-	end
+AddEventHandler("BikeStands:Client:Open", function(payload)
+    local data = payload and (payload.data or payload)
 
-	local menuData = {
-		main = {
-			label = "Bicycle Stand - Purchase a Bicycle",
-			items = {},
-		},
-	}
+    if not data or not data.location then return end
 
-	for k, v in ipairs(_bikeStandAvailable) do
-		table.insert(menuData.main.items, {
-			label = v.name,
-			description = "Purchase for $" .. v.price .. " Cash",
-			event = "BikeStands:Client:Purchase",
-			data = { location = data.location, bike = k },
-		})
-	end
+    if _justBoughtBike[data.location] then
+        return exports["sandbox-hud"]:Notification("error", "You Just Bought a Bike off Me! Weirdo!")
+    end
 
-	exports['sandbox-hud']:ListMenuShow(menuData)
+    local menuData = {
+        main = {
+            label = "Bicycle Stand - Purchase a Bicycle",
+            items = {},
+        },
+    }
+
+    for k, v in ipairs(_bikeStandAvailable) do
+        table.insert(menuData.main.items, {
+            label = v.name,
+            description = "Purchase for $" .. v.price .. " Cash",
+            event = "BikeStands:Client:Purchase",
+            data = { location = data.location, bike = k },
+        })
+    end
+
+    exports['sandbox-hud']:ListMenuShow(menuData)
 end)
 
-AddEventHandler("BikeStands:Client:Purchase", function(data)
+
+AddEventHandler("BikeStands:Client:Purchase", function(payload)
+    local data = payload and (payload.data or payload)
+
+    if not data or not data.location or not data.bike then return end
+
 	if data and data.location and data.bike then
 		local bikeData = _bikeStandAvailable[data.bike]
 		local locationData = _bikeStands[data.location]
@@ -141,7 +150,7 @@ AddEventHandler("BikeStands:Client:Purchase", function(data)
 		}, function(success)
 			if success then
 				_justBoughtBike[data.location] = true
-				exports["sandbox-hud"]:Notification("success",
+				exports["sandbox-hud"]:Notification("success", 
 					string.format("Purchased %s, It Has Been Brought out for You.",
 						bikeData.name))
 			else
